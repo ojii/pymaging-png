@@ -1,0 +1,9 @@
+/dist/
+/build/
+/*.egg/
+/*.egg-info/
+/*env*/
+.*
+!.gitignore
+*.pyc
+

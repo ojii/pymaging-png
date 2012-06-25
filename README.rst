@@ -1,0 +1,5 @@
+############
+Pymaging PNG
+############
+
+PNG support for pymaging.
