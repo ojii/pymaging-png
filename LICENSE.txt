@@ -1,3 +1,7 @@
+Some code in this repository (in pymaging_png/reader.py and
+pymaging_png/raw.py) is based off the work by Johann C. Rocholl, David Jones
+and Nicko van Someren, which is licensed under the MIT License
+
 Copyright (c) 2012, Jonas Obrist
 All rights reserved.
 

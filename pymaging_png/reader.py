@@ -156,13 +156,13 @@ def paeth(scanline, previous, filter_unit):
         ai += 1
     return result
 
-FILTERS = {
-    0: nofilter,
-    1: sub,
-    2: up, 
-    3: average,
-    4: paeth,
-}
+FILTERS = [
+    nofilter,
+    sub,
+    up,
+    average,
+    paeth,
+]
 
 
 class Adam7(object):
