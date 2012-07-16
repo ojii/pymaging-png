@@ -2,11 +2,12 @@
 # http://www.w3.org/TR/PNG-DataRep.html
 from __future__ import generators
 from .compat import irange, tostring, bytestostr
-from array import array
+import array
 from pymaging.colors import RGBA, RGB
 from pymaging.exceptions import PymagingException
 from pymaging.image import Image
 from pymaging.utils import fdiv
+from pymaging.pixelarray import get_pixel_array
 import math
 import operator
 import struct
@@ -96,7 +97,7 @@ def nofilter(scanline, previous, filter_unit):
 def sub(scanline, previous, filter_unit):
     """Undo sub filter."""
 
-    result = array('B', scanline)
+    result = array.array('B', scanline)
     # Loops starts at index filter_unit.  Observe that the initial part
     # of the result is already filled in correctly with scanline.
     for ai, i in enumerate(range(filter_unit, len(scanline))):
@@ -109,14 +110,14 @@ def up(scanline, previous, filter_unit):
     """Undo up filter."""
     scanline_length = len(scanline)
     if previous is None:
-        previous = array('B', [0] * scanline_length)
-    return array('B', [scanline[index] + previous[index] & 0xff for index in range(scanline_length)])
+        previous = array.array('B', [0] * scanline_length)
+    return array.array('B', [scanline[index] + previous[index] & 0xff for index in range(scanline_length)])
 
 def average(scanline, previous, filter_unit):
     """Undo average filter."""
 
     ai = -filter_unit
-    result = array('B', scanline)
+    result = array.array('B', scanline)
     for i in range(len(result)):
         x = scanline[i]
         if ai < 0:
@@ -131,7 +132,7 @@ def average(scanline, previous, filter_unit):
 def paeth(scanline, previous, filter_unit):
     """Undo Paeth filter."""
 
-    result = array('B', scanline)
+    result = array.array('B', scanline)
     # Also used for ci.
     ai = -filter_unit
     for i in range(len(result)):
@@ -216,7 +217,7 @@ class Adam7(object):
             return
         self.xstart, self.ystart, self.xstep, self.ystep = self.passes[self.current_pass]
         self.pixels_per_row = int(math.ceil(fdiv(self.reader.width - self.xstart, self.xstep)))
-        self.row_bytes = int(math.ceil(self.reader.psize * self.pixels_per_row))
+        self.row_bytes = int(math.ceil(self.reader.pixelsize * self.pixels_per_row))
         self.reader.scanline_length = self.get_scanline_length()
         if self.ystart >= self.reader.height:
             # empty pass
@@ -250,12 +251,12 @@ class Adam7(object):
         psize = self.reader.psize
         # fastpath for pass 7
         if self.current_pass == self.LAST_PASS:
-            self.reader.pixels[self.current_y] = array(flat.typecode, flat)
+            start = self.current_y * self.reader.pixels.line_length
+            end = start + self.reader.pixels.line_length
+            self.reader.pixels.data[start:end] = flat
         else:
             for index, x in enumerate(range(self.xstart, self.reader.width, self.xstep)):
-                xstart = x * psize
-                xend = xstart + psize
-                self.reader.pixels[self.current_y][xstart:xend] = flat[index:index+psize]
+                self.reader.pixels.set(x, self.current_y, flat[index:index+psize])
                 del flat[index:index+psize]
         self.shift()
 
@@ -321,7 +322,7 @@ class Reader(object):
             handler = handlers.get(chunk_type, nullhandler)
             handler(chunk_data, chunk_length)
         mode = RGBA if self.alpha else RGB
-        return Image(self.width, self.height, self.pixels, mode, palette=self.palette)
+        return Image(self.pixels, mode, palette=self.palette)
         
     def validate_signature(self):
         """
@@ -420,6 +421,14 @@ class Reader(object):
               " see http://www.w3.org/TR/2003/REC-PNG-20031110/#8InterlaceMethods ."
               % self.interlace_method)
 
+        self.pixelsize = {
+            0: 1,
+            2: 3,
+            3: 1,
+            4: 2,
+            6: 4,
+        }[self.color_type]
+
         # Derived values
         # http://www.w3.org/TR/PNG/#6Colour-values
         colormap =  bool(self.color_type & 1)
@@ -442,20 +451,21 @@ class Reader(object):
         self.filter_unit = max(1, self.psize)
         self.row_bytes = int(math.ceil(self.width * self.psize))
         # scanline stuff
-        self.scanline = array('B')
+        self.scanline = array.array('B')
         if self.bit_depth == 16:
             array_code = 'H'
         else:
             array_code = 'B'
+        data = array.array(array_code, [0] * self.width * self.height * self.pixelsize)
+        self.pixels = get_pixel_array(data, self.width, self.height, self.pixelsize)
         if self.interlace_method:
             self.adam7 = Adam7(self)
-            self.pixels = [array(array_code, [0] * self.width * self.psize) for _ in range(self.height)]
             self.scanline_length = self.adam7.get_scanline_length()
             self._process_scanline = self._process_interlaced_scanline
         else:
             self.previous_scanline = None
-            self.pixels = []
             self.scanline_length = self.row_bytes + 1
+            self.current_y = 0
             self._process_scanline = self._process_straightlaced_scanline
     
     def handle_chunk_PLTE(self, chunk, length):
@@ -514,7 +524,7 @@ class Reader(object):
             raise PNGReaderError("sBIT chunk has incorrect length.")
         
     def handle_chunk_IDAT(self, chunk, length):
-        uncompressed = array('B', self.decompressor.decompress(chunk))
+        uncompressed = array.array('B', self.decompressor.decompress(chunk))
         self.scanline.extend(uncompressed)
         while len(self.scanline) >= self.scanline_length:
             filter_type = self.scanline[0]
@@ -531,16 +541,21 @@ class Reader(object):
         self.done_reading = True
         
     def _build_palette(self):
-        plte = group(array('B', self.plte), 3)
+        plte = group(array.array('B', self.plte), 3)
         if self.trns:
-            trns = array('B', self.trns or '')
+            trns = array.array('B', self.trns or '')
             trns.extend([255] * (len(plte) - len(trns)))
             plte = map(operator.add, plte, group(trns, 1))
         self.palette = plte
     
     def _process_straightlaced_scanline(self, filter_type, scanline):
         data = FILTERS[filter_type](scanline, self.previous_scanline, self.filter_unit)
-        self.pixels.append(self.as_values(data))
+        values = self.as_values(data)
+        rows = len(values) / self.pixelsize
+        start = self.pixels.line_length * self.current_y
+        end = start + (self.pixels.line_length * rows)
+        self.pixels.data[start:end] = values
+        self.current_y += rows
         self.previous_scanline = data
         
     def _process_interlaced_scanline(self, filter_type, scanline):
@@ -554,12 +569,12 @@ class Reader(object):
             return raw_row
         if self.bit_depth == 16:
             raw_row = tostring(raw_row)
-            return array('H', struct.unpack('!%dH' % (len(raw_row) // 2), raw_row))
+            return array.array('H', struct.unpack('!%dH' % (len(raw_row) // 2), raw_row))
         assert self.bit_depth < 8
         width = self.width
         # Samples per byte
         spb = 8 // self.bit_depth
-        out = array('B')
+        out = array.array('B')
         mask = 2 ** self.bit_depth - 1
         shifts = map(self.bit_depth.__mul__, reversed(range(spb)))
         for o in raw_row:

@@ -22,41 +22,41 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from pymaging import Image
-from pymaging.formats import register
 from pymaging.utils import get_test_file
 from pymaging.webcolors import Black, White
-from pymaging_png.png import PNG
 import unittest
+from pymaging_png.png import PNG
 
 
 class PNGTests(unittest.TestCase):
-    def setUp(self):
-        register(PNG)
-        
+
     def test_indexed(self):
-        img = Image.open_from_path(get_test_file(__file__, 'black-white-indexed.png'))
+        with open(get_test_file(__file__, 'black-white-indexed.png')) as fobj:
+            img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 1), Black)
         self.assertEqual(img.get_color(0, 1), White)
         self.assertEqual(img.get_color(1, 0), White)
         
     def test_non_indexed(self):
-        img = Image.open_from_path(get_test_file(__file__, 'black-white-non-indexed.png'))
+        with open(get_test_file(__file__, 'black-white-non-indexed.png')) as fobj:
+            img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 1), Black)
         self.assertEqual(img.get_color(0, 1), White)
         self.assertEqual(img.get_color(1, 0), White)
         
     def test_non_indexed_interlaced(self):
-        img = Image.open_from_path(get_test_file(__file__, 'black-white-non-indexed-interlaced-adam7.png'))
+        with open(get_test_file(__file__, 'black-white-non-indexed-interlaced-adam7.png')) as fobj:
+            img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 1), Black)
         self.assertEqual(img.get_color(0, 1), White)
         self.assertEqual(img.get_color(1, 0), White)
         
     def test_with_transparency(self):
-        img = Image.open_from_path(get_test_file(__file__, 'black-white-with-transparency.png'))
+        with open(get_test_file(__file__, 'black-white-with-transparency.png')) as fobj:
+            img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 0), White)
         self.assertEqual(img.get_color(1, 1), Black.get_for_brightness(0.5))
