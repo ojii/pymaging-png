@@ -551,7 +551,7 @@ class Reader(object):
     def _process_straightlaced_scanline(self, filter_type, scanline):
         data = FILTERS[filter_type](scanline, self.previous_scanline, self.filter_unit)
         values = self.as_values(data)
-        rows = len(values) / self.pixelsize
+        rows = int(len(values) / self.pixelsize)
         start = self.pixels.line_length * self.current_y
         end = start + (self.pixels.line_length * rows)
         self.pixels.data[start:end] = values

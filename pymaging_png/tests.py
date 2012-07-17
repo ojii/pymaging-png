@@ -31,7 +31,7 @@ from pymaging_png.png import PNG
 class PNGTests(unittest.TestCase):
 
     def test_indexed(self):
-        with open(get_test_file(__file__, 'black-white-indexed.png')) as fobj:
+        with open(get_test_file(__file__, 'black-white-indexed.png'), 'rb') as fobj:
             img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 1), Black)
@@ -39,7 +39,7 @@ class PNGTests(unittest.TestCase):
         self.assertEqual(img.get_color(1, 0), White)
         
     def test_non_indexed(self):
-        with open(get_test_file(__file__, 'black-white-non-indexed.png')) as fobj:
+        with open(get_test_file(__file__, 'black-white-non-indexed.png'), 'rb') as fobj:
             img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 1), Black)
@@ -47,7 +47,7 @@ class PNGTests(unittest.TestCase):
         self.assertEqual(img.get_color(1, 0), White)
         
     def test_non_indexed_interlaced(self):
-        with open(get_test_file(__file__, 'black-white-non-indexed-interlaced-adam7.png')) as fobj:
+        with open(get_test_file(__file__, 'black-white-non-indexed-interlaced-adam7.png'), 'rb') as fobj:
             img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 1), Black)
@@ -55,7 +55,7 @@ class PNGTests(unittest.TestCase):
         self.assertEqual(img.get_color(1, 0), White)
         
     def test_with_transparency(self):
-        with open(get_test_file(__file__, 'black-white-with-transparency.png')) as fobj:
+        with open(get_test_file(__file__, 'black-white-with-transparency.png'), 'rb') as fobj:
             img = PNG.decode(fobj)
         self.assertEqual(img.get_color(0, 0), Black)
         self.assertEqual(img.get_color(1, 0), White)
