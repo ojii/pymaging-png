@@ -25,6 +25,7 @@
 from pymaging.utils import get_test_file
 from pymaging.webcolors import Black, White
 import unittest
+from StringIO import StringIO
 from pymaging_png.png import PNG
 
 
@@ -61,3 +62,9 @@ class PNGTests(unittest.TestCase):
         self.assertEqual(img.get_color(1, 0), White)
         self.assertEqual(img.get_color(1, 1), Black.get_for_brightness(0.5))
         self.assertEqual(img.get_color(0, 1), White.get_for_brightness(0.5))
+
+    def test_save(self):
+        with open(get_test_file(__file__, 'black-white-with-transparency.png'), 'rb') as fobj:
+            img = PNG.decode(fobj)
+        sio = StringIO()
+        PNG.encode(img, sio)
