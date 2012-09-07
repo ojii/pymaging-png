@@ -25,8 +25,11 @@
 from pymaging.utils import get_test_file
 from pymaging.webcolors import Black, White
 import unittest
-from StringIO import StringIO
 from pymaging_png.png import PNG
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO # py3
 
 
 class PNGTests(unittest.TestCase):
