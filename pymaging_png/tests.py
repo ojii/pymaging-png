@@ -29,7 +29,7 @@ from pymaging_png.png import PNG
 try:
     from StringIO import StringIO
 except ImportError:
-    from io import StringIO # py3
+    from io import BytesIO as StringIO # py3
 
 
 class PNGTests(unittest.TestCase):
