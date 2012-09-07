@@ -23,9 +23,8 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from pymaging.colors import RGBA
 from pymaging.formats import Format
-from .raw import Writer
+from pymaging_png.writer import write
 from .reader import Reader, PNGReaderError
 
 def decode(fileobj):
@@ -37,12 +36,6 @@ def decode(fileobj):
         return None
 
 def encode(image, fileobj):
-    writer = Writer(
-        width=image.width,
-        height=image.height,
-        alpha=image.mode is RGBA,
-        palette=image.palette,
-    )
-    writer.write(fileobj, image.pixels)
+    write(image, fileobj)
 
 PNG = Format(decode, encode, ['png'])

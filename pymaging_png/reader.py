@@ -4,13 +4,15 @@ from __future__ import generators
 from .compat import irange, tostring, bytestostr
 import array
 from pymaging.colors import RGBA, RGB
-from pymaging.exceptions import PymagingException
 from pymaging.image import Image
 from pymaging.utils import fdiv
 from pymaging.pixelarray import get_pixel_array
 import math
 import operator
 import struct
+from pymaging_png.constants import (PNGReaderError, PNG_SIGNATURE, NoChunkLength, InvalidChunkLength, NoChunkType,
+        InvalidChunkType, MAX_CHUNK_LENGTH, ALLOWED_COLOR_TYPES, ALLOWED_BIT_DEPTHS, VERIFY_CONSTANT, ChunkError,
+        Adam7Error)
 import warnings
 import zlib
 #
@@ -65,24 +67,6 @@ import zlib
 # Incorporated into pypng by drj on 2009-03-12 from
 # //depot/prj/bangaio/master/code/png.py#67
 
-
-
-# The PNG signature.
-# http://www.w3.org/TR/PNG/#5PNG-file-signature
-PNG_SIGNATURE = struct.pack('8B', 137, 80, 78, 71, 13, 10, 26, 10)
-MAX_CHUNK_LENGTH = 2**31-1
-VERIFY_CONSTANT = 2**32 - 1
-ALLOWED_BIT_DEPTHS = [1, 2, 4, 8, 16]
-ALLOWED_COLOR_TYPES = [0, 2, 3, 4, 6]
-
-
-class PNGReaderError(PymagingException): pass
-class NoChunkLength(PNGReaderError): pass
-class NoChunkType(PNGReaderError): pass
-class InvalidChunkLength(PNGReaderError): pass
-class InvalidChunkType(PNGReaderError): pass
-class ChunkError(PNGReaderError): pass
-class Adam7Error(PNGReaderError): pass
 
 
 def group(s, n):
