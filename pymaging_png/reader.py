@@ -279,6 +279,7 @@ class Reader(object):
         self.colormap = None
         self.greyscale = None
         self.alpha = None
+        self.mode = None
         self.color_planes = None
         self.planes = None
         self.psize = None
@@ -288,11 +289,7 @@ class Reader(object):
         self.sbit = None
         self.trns = None
         self.decompressor = zlib.decompressobj()
-        
-    def get_image(self):
-        self.validate_signature()
-        nullhandler = lambda chunk, length: None
-        handlers = {
+        self.handlers = {
             'IHDR': self.handle_chunk_IHDR,
             'PLTE': self.handle_chunk_PLTE,
             'IDAT': self.handle_chunk_IDAT,
@@ -302,11 +299,32 @@ class Reader(object):
             'sBIT': self.handle_chunk_sBIT,
             'IEND': self.handle_chunk_IEND,
         }
-        for chunk_type, chunk_length, chunk_data in self.iter_chunks():
-            handler = handlers.get(chunk_type, nullhandler)
-            handler(chunk_data, chunk_length)
-        mode = RGBA if self.alpha else RGB
-        return Image(self.pixels, mode, palette=self.palette)
+        self.chunk_iter = self.iter_chunks()
+
+    def read_headers(self):
+        self.validate_signature()
+        while not all([self.width, self.height, self.mode]):
+            self.read_chunk()
+
+    def get_image(self):
+        self.read_headers()
+        return Image(self.mode, self.width, self.height, self.load, {'source_format': 'png'})
+
+    def load(self):
+        nullhandler = lambda chunk, length: None
+        while True:
+            try:
+                self.read_chunk()
+            except StopIteration:
+                break
+        return self.pixels, self.palette
+
+    def read_chunk(self):
+        nullhandler = lambda chunk, length: None
+        chunk_type, chunk_length, chunk_data = next(self.iter_chunks())
+        handler = self.handlers.get(chunk_type, nullhandler)
+        handler(chunk_data, chunk_length)
+
         
     def validate_signature(self):
         """
@@ -334,7 +352,6 @@ class Reader(object):
                 raise InvalidChunkType(raw_chunk_type)
             bytes_chunk_type = struct.unpack('!4s', raw_chunk_type)[0]
             chunk_type = bytestostr(bytes_chunk_type)
-            
             # sanity check
             if chunk_length > MAX_CHUNK_LENGTH:
                 raise PNGReaderError('Chunk %s is too large: %d.' % (chunk_type, chunk_length))
@@ -427,6 +444,7 @@ class Reader(object):
         self.colormap = colormap
         self.greyscale = greyscale
         self.alpha = alpha
+        self.mode = RGBA if self.alpha else RGB
         self.color_planes = color_planes
         self.planes = planes
         self.psize = fdiv(self.bit_depth, 8) * planes

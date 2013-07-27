@@ -27,15 +27,13 @@ from pymaging.formats import Format
 from pymaging_png.writer import write
 from .reader import Reader, PNGReaderError
 
-def decode(fileobj):
+def open_image(fileobj):
     reader = Reader(fileobj=fileobj)
     try:
         return reader.get_image()
     except PNGReaderError:
         fileobj.seek(0)
+        import traceback;traceback.print_exc()
         return None
 
-def encode(image, fileobj):
-    write(image, fileobj)
-
-PNG = Format(decode, encode, ['png'])
+PNG = Format(open_image, write, ['png'])
